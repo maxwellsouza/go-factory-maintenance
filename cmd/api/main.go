@@ -2,26 +2,37 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/maxwellsouza/go-factory-maintenance/internal/http/handlers"
+	"github.com/maxwellsouza/go-factory-maintenance/internal/repository/memory"
+	"github.com/maxwellsouza/go-factory-maintenance/internal/service"
 )
 
 func main() {
-	// Modo de execução: "release" em produção, "debug" no dev
 	gin.SetMode(gin.DebugMode)
-
 	r := gin.New()
-	// Middlewares essenciais
-	r.Use(gin.Recovery()) // evita crash do servidor em panic
-	r.Use(gin.Logger())   // log simples de requests
+	r.Use(gin.Logger(), gin.Recovery())
 
-	// Health check
+	// Healthz
 	r.GET("/healthz", func(c *gin.Context) {
-		c.String(http.StatusOK, "ok")
+		c.String(200, "ok")
 	})
 
-	log.Println("🚀 API (Gin) running on :8080")
+	// Injeção manual (sem banco ainda)
+	assetRepo := memory.NewAssetMemoryRepo()
+	workOrderRepo := memory.NewWorkOrderMemoryRepo()
+
+	assetService := service.NewAssetService(assetRepo)
+	workOrderService := service.NewWorkOrderService(workOrderRepo)
+
+	assetHandler := handlers.NewAssetHandler(assetService)
+	workOrderHandler := handlers.NewWorkOrderHandler(workOrderService)
+
+	assetHandler.RegisterRoutes(r)
+	workOrderHandler.RegisterRoutes(r)
+
+	log.Println("🚀 API running on :8080")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
