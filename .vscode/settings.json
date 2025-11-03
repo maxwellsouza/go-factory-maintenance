@@ -1,0 +1,10 @@
+{
+  "go.useLanguageServer": true,
+  "go.formatTool": "gofmt",
+  "go.toolsManagement.autoUpdate": true,
+  "editor.formatOnSave": true,
+  "files.eol": "\n",
+  "go.testFlags": ["-v"],
+  "go.testTimeout": "60s",
+  "makefile.configureOnOpen": false
+}
