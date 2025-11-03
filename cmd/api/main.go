@@ -1,16 +1,28 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, "ok")
+	// Modo de execução: "release" em produção, "debug" no dev
+	gin.SetMode(gin.DebugMode)
+
+	r := gin.New()
+	// Middlewares essenciais
+	r.Use(gin.Recovery()) // evita crash do servidor em panic
+	r.Use(gin.Logger())   // log simples de requests
+
+	// Health check
+	r.GET("/healthz", func(c *gin.Context) {
+		c.String(http.StatusOK, "ok")
 	})
 
-	log.Println("🚀 API running on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Println("🚀 API (Gin) running on :8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("server error: %v", err)
+	}
 }
