@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -34,8 +35,16 @@ func (r *AssetMemoryRepo) Create(asset *domain.Asset) error {
 func (r *AssetMemoryRepo) FindAll() ([]domain.Asset, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
+	ids := make([]int64, 0, len(r.data))
+	for id := range r.data {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+
 	result := make([]domain.Asset, 0, len(r.data))
-	for _, a := range r.data {
+	for _, id := range ids {
+		a := r.data[id]
 		result = append(result, *a)
 	}
 	return result, nil
