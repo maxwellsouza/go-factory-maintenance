@@ -147,3 +147,96 @@ func TestWorkOrders_CreateAndFilter(t *testing.T) {
 		t.Fatalf("expected 2 work orders, got %d", len(all))
 	}
 }
+
+func TestAssets_Create_Validation422(t *testing.T) {
+	r := setupRouter()
+
+	// JSON vazio -> falta "name" (required)
+	payload := []byte(`{}`)
+	req := httptest.NewRequest(http.MethodPost, "/assets", bytes.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("POST /assets expected 422, got %d; body=%s", w.Code, w.Body.String())
+	}
+
+	// Opcional: valida que vem um JSON com "error":"erro de validação"
+	var body map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if body["error"] != "erro de validação" {
+		t.Fatalf("expected error 'erro de validação', got %v", body["error"])
+	}
+}
+
+func TestWorkOrders_Create_Validation422(t *testing.T) {
+	r := setupRouter()
+
+	// Primeiro, cria um asset válido (para depois testar outros cenários)
+	reqAsset := httptest.NewRequest(http.MethodPost, "/assets",
+		bytes.NewReader([]byte(`{"name":"Asset Test 422"}`)))
+	reqAsset.Header.Set("Content-Type", "application/json")
+	wAsset := httptest.NewRecorder()
+	r.ServeHTTP(wAsset, reqAsset)
+	if wAsset.Code != http.StatusCreated {
+		t.Fatalf("POST /assets expected 201, got %d; body=%s", wAsset.Code, wAsset.Body.String())
+	}
+
+	tests := []struct {
+		name    string
+		payload string
+	}{
+		{
+			name:    "missing asset_id and title",
+			payload: `{}`,
+		},
+		{
+			name:    "invalid asset_id (zero)",
+			payload: `{"asset_id":0,"title":"x"}`,
+		},
+		{
+			name:    "missing title",
+			payload: `{"asset_id":1}`,
+		},
+		{
+			name:    "short title (min=3)",
+			payload: `{"asset_id":1,"title":"ab"}`,
+		},
+		{
+			name:    "invalid status value",
+			payload: `{"asset_id":1,"title":"Valid","status":"WRONG"}`,
+		},
+		{
+			name:    "invalid type value",
+			payload: `{"asset_id":1,"title":"Valid","type":"WRONG"}`,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/work-orders", bytes.NewReader([]byte(tc.payload)))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			r.ServeHTTP(w, req)
+
+			if w.Code != http.StatusUnprocessableEntity {
+				t.Fatalf("POST /work-orders (%s) expected 422, got %d; body=%s",
+					tc.name, w.Code, w.Body.String())
+			}
+
+			var body map[string]any
+			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+				t.Fatalf("failed to unmarshal response: %v", err)
+			}
+			if body["error"] != "erro de validação" {
+				t.Fatalf("expected error 'erro de validação', got %v", body["error"])
+			}
+		})
+	}
+}

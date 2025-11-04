@@ -6,14 +6,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/maxwellsouza/go-factory-maintenance/internal/http/handlers"
+	"github.com/maxwellsouza/go-factory-maintenance/internal/http/middleware"
 	"github.com/maxwellsouza/go-factory-maintenance/internal/repository/postgres"
 	"github.com/maxwellsouza/go-factory-maintenance/internal/service"
+	logrus "github.com/sirupsen/logrus"
 )
 
 func main() {
+	// Configura logger
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+	logrus.SetLevel(logrus.InfoLevel)
+
 	gin.SetMode(gin.DebugMode)
 	r := gin.New()
-	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(gin.Recovery(), middleware.LoggerMiddleware())
 
 	r.GET("/healthz", func(c *gin.Context) {
 		c.String(200, "ok")
@@ -38,8 +44,8 @@ func main() {
 	assetHandler.RegisterRoutes(r)
 	workOrderHandler.RegisterRoutes(r)
 
-	log.Println("🚀 API (Postgres) running on :8080")
+	logrus.Info("🚀 API (Postgres) running on :8080")
 	if err := r.Run(":8080"); err != nil {
-		log.Fatalf("server error: %v", err)
+		logrus.Fatalf("server error: %v", err)
 	}
 }

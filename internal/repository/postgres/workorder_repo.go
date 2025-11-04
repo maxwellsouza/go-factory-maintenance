@@ -44,10 +44,16 @@ func (r *WorkOrderRepo) FindAll() ([]domain.WorkOrder, error) {
 	defer cancel()
 
 	query := `
-		SELECT id, asset_id, type, status, title, description, breakdown_at, closed_at,
-		       downtime_minutes, cause, solution, created_at, updated_at
-		FROM work_orders ORDER BY id;
-	`
+			SELECT id, asset_id, type, status, title,
+					COALESCE(description,'') AS description,
+					breakdown_at, closed_at,
+					downtime_minutes,
+					COALESCE(cause,'')    AS cause,
+					COALESCE(solution,'') AS solution,
+					created_at, updated_at
+			FROM work_orders
+			ORDER BY id;
+			`
 
 	rows, err := r.db.Pool.Query(ctx, query)
 	if err != nil {
@@ -75,12 +81,17 @@ func (r *WorkOrderRepo) FindByStatus(status domain.WorkOrderStatus) ([]domain.Wo
 	defer cancel()
 
 	query := `
-		SELECT id, asset_id, type, status, title, description, breakdown_at, closed_at,
-		       downtime_minutes, cause, solution, created_at, updated_at
-		FROM work_orders
-		WHERE status=$1
-		ORDER BY id;
-	`
+			SELECT id, asset_id, type, status, title,
+					COALESCE(description,'') AS description,
+					breakdown_at, closed_at,
+					downtime_minutes,
+					COALESCE(cause,'')    AS cause,
+					COALESCE(solution,'') AS solution,
+					created_at, updated_at
+			FROM work_orders
+			WHERE status=$1
+			ORDER BY id;
+			`
 
 	rows, err := r.db.Pool.Query(ctx, query, status)
 	if err != nil {

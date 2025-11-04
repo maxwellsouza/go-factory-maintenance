@@ -39,7 +39,8 @@ func (r *AssetRepo) FindAll() ([]domain.Asset, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	query := `SELECT id, name, location, criticality, created_at, updated_at FROM assets ORDER BY id;`
+	query := `SELECT id, name, COALESCE(location,''), criticality, created_at, updated_at
+          FROM assets ORDER BY id;`
 
 	rows, err := r.db.Pool.Query(ctx, query)
 	if err != nil {
@@ -62,7 +63,8 @@ func (r *AssetRepo) FindByID(id int64) (*domain.Asset, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	query := `SELECT id, name, location, criticality, created_at, updated_at FROM assets WHERE id=$1;`
+	query := `SELECT id, name, COALESCE(location,''), criticality, created_at, updated_at
+          FROM assets WHERE id=$1;`
 
 	var a domain.Asset
 	err := r.db.Pool.QueryRow(ctx, query, id).Scan(&a.ID, &a.Name, &a.Location, &a.Criticality, &a.CreatedAt, &a.UpdatedAt)
